@@ -86,28 +86,29 @@ const UserPortal = () => {
                 </button>
 
                 {!selectedTemplate ? (
-                    <div className="max-w-5xl mx-auto text-center">
-                        <h1 className="text-4xl font-extrabold text-slate-900 mb-4 tracking-tight">What do you need help with?</h1>
-                        <p className="text-lg text-slate-500 mb-12 max-w-2xl mx-auto">Select a service from our catalog to get started. We'll guide you through the rest.</p>
+                    <div className="max-w-6xl mx-auto text-center">
+                        <h1 className="text-3xl font-bold text-slate-900 mb-3 tracking-tight">Service Catalog</h1>
+                        <p className="text-base text-slate-500 mb-10 max-w-2xl mx-auto">Select a service to initiate a new request.</p>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                             {templates.map(tmpl => (
                                 <div
                                     key={tmpl.id}
                                     onClick={() => setSelectedTemplate(tmpl)}
-                                    className="group relative bg-white rounded-2xl p-8 shadow-saas-md hover:shadow-saas-lg border border-slate-200 cursor-pointer transition-all duration-300 hover:-translate-y-1 overflow-hidden"
+                                    className="group relative bg-white rounded-xl p-6 shadow-sm hover:shadow-md border border-slate-200 cursor-pointer transition-all duration-200 hover:border-brand-300 text-left flex flex-col h-full"
                                 >
-                                    <div className="absolute top-0 left-0 w-full h-1 bg-brand-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300" />
-
-                                    <div className="w-16 h-16 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center mb-6 text-3xl shadow-sm group-hover:bg-brand-600 group-hover:text-white transition-colors duration-300 mx-auto">
-                                        {tmpl.category === 'Infrastructure' ? <Server /> : tmpl.category === 'IAM' ? <Shield /> : <Activity />}
+                                    <div className="flex items-start justify-between mb-4">
+                                        <div className="w-12 h-12 rounded-lg bg-slate-50 text-brand-600 flex items-center justify-center text-2xl group-hover:bg-brand-50 transition-colors">
+                                            {tmpl.category === 'Infrastructure' ? <Server size={24} /> : tmpl.category === 'IAM' ? <Shield size={24} /> : <Activity size={24} />}
+                                        </div>
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 border border-slate-100 px-2 py-1 rounded-full bg-slate-50">{tmpl.category}</span>
                                     </div>
 
-                                    <h3 className="text-xl font-bold text-slate-900 mb-2">{tmpl.name}</h3>
-                                    <p className="text-slate-500 text-sm leading-relaxed">{tmpl.description}</p>
+                                    <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-brand-600 transition-colors">{tmpl.name}</h3>
+                                    <p className="text-slate-500 text-sm leading-relaxed mb-4 flex-1">{tmpl.description}</p>
 
-                                    <div className="mt-6 text-brand-600 font-medium text-sm flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">
-                                        Start Request <span>→</span>
+                                    <div className="pt-4 border-t border-slate-50 flex items-center text-brand-600 text-sm font-semibold gap-2 group-hover:gap-3 transition-all">
+                                        Start Request <span className="text-lg leading-none">→</span>
                                     </div>
                                 </div>
                             ))}
