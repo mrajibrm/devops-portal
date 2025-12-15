@@ -1,0 +1,105 @@
+version: '3.8'
+
+services:
+  # -------------------------------------------------------------------------
+  # Database (PostgreSQL 15)
+  # Security: Isolated network, environment variables for secrets
+  # -------------------------------------------------------------------------
+  postgres:
+    image: postgres:15-alpine
+    container_name: devops-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: dev_secret_password_123!
+      POSTGRES_DB: devops_hub
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - devops-net
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U admin -d devops_hub" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # -------------------------------------------------------------------------
+  # API Gateway (Nginx)
+  # Security: Hardened config, Rate limiting, Reverse Proxy
+  # -------------------------------------------------------------------------
+  nginx:
+    image: nginx:alpine
+    container_name: devops-gateway
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      ticket-service:
+        condition: service_started
+    networks:
+      - devops-net
+
+  # -------------------------------------------------------------------------
+  # Services (Commented out until Dockerfiles are ready)
+  # -------------------------------------------------------------------------
+
+  auth-service:
+    build: ./backend/auth-service
+    container_name: devops-auth
+    restart: always
+    environment:
+      PORT: 3000
+      DB_HOST: postgres
+      DB_USER: auth_service_user
+      DB_PASSWORD: auth_pass_123
+      DB_NAME: auth_db
+      JWT_SECRET: super_secret_jwt_key_dev
+      REFRESH_SECRET: super_secret_refresh_key_dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - devops-net
+
+  ticket-service:
+    build: ./backend/ticket-service
+    container_name: devops-ticket
+    restart: always
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ticket_service_user
+      DB_PASSWORD: ticket_pass_123
+      DB_NAME: ticket_db
+      JWT_SECRET: super_secret_jwt_key_dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - devops-net
+
+  catalog-service:
+    build: ./backend/catalog-service
+    container_name: devops-catalog
+    restart: always
+    networks:
+      - devops-net
+  # frontend:
+  #   build: ./frontend
+  #   ...
+
+networks:
+  devops-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
