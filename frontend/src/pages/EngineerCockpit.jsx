@@ -31,13 +31,34 @@ const EngineerCockpit = () => {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsUrl = `${protocol}//${window.location.host}/api/tickets/live`;
 
-        wsRef.current = new WebSocket(wsUrl);
-        wsRef.current.onmessage = (event) => {
-            const msg = JSON.parse(event.data);
-            if (msg.type === 'NEW_TICKET' || msg.type === 'TICKET_UPDATED') {
-                fetchTickets(); // Simple re-fetch strategy for consistency
-                flashPulse();
+        console.log('Connecting to WebSocket:', wsUrl);
+        const ws = new WebSocket(wsUrl);
+        wsRef.current = ws;
+
+        ws.onopen = () => {
+            console.log('WebSocket Connected');
+        };
+
+        ws.onmessage = (event) => {
+            try {
+                const msg = JSON.parse(event.data);
+                if (msg.type === 'NEW_TICKET' || msg.type === 'TICKET_UPDATED') {
+                    console.log('Real-time update received:', msg);
+                    fetchTickets(); // Simple re-fetch strategy for consistency
+                    flashPulse();
+                }
+            } catch (e) {
+                console.error('Failed to parse WS message', e);
             }
+        };
+
+        ws.onerror = (error) => {
+            console.error('WebSocket Error:', error);
+        };
+
+        ws.onclose = () => {
+            console.log('WebSocket Disconnected. Reconnecting in 3s...');
+            setTimeout(setupWebSocket, 3000); // Simple reconnect
         };
     };
 
