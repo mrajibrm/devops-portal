@@ -14,28 +14,32 @@ const Navbar = () => {
     const { theme, toggleTheme } = useTheme();
 
     return (
-        <nav className="flex items-center justify-between px-6 py-4 border-b border-border shadow-sm" style={{ backdropFilter: 'blur(10px)', background: 'rgba(22, 27, 34, 0.8)' }}>
-            <div className="flex items-center gap-2">
-                <Terminal className="text-accent" />
-                <span className="text-lg font-bold tracking-tight">DevOps<span className="text-accent">Portal</span></span>
-            </div>
-
-            <div className="flex items-center gap-4">
-                <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-white/5 transition-colors">
-                    {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-                </button>
-
-                {user && (
-                    <div className="flex items-center gap-4">
-                        <div className="text-sm text-right hidden sm:block">
-                            <div className="font-medium text-primary">{user.username}</div>
-                            <div className="text-xs text-secondary uppercase">{user.role}</div>
-                        </div>
-                        <button onClick={logout} className="p-2 text-danger hover:bg-danger/10 rounded-full" title="Logout">
-                            <LogOut size={20} />
-                        </button>
+        <nav className="sticky top-0 z-50 glass border-b border-gray-100 mb-6">
+            <div className="px-6 py-4 flex items-center justify-between max-w-7xl mx-auto">
+                <div className="flex items-center gap-2.5">
+                    <div className="bg-black text-white p-2 rounded-lg">
+                        <Terminal size={20} />
                     </div>
-                )}
+                    <span className="text-lg font-bold tracking-tight text-apple-dark">DevOps<span className="text-apple-blue">Hub</span></span>
+                </div>
+
+                <div className="flex items-center gap-4">
+                    <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-gray-100 transition-colors text-secondary">
+                        {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+                    </button>
+
+                    {user && (
+                        <div className="flex items-center gap-4 pl-4 border-l border-gray-200">
+                            <div className="text-sm text-right hidden sm:block">
+                                <div className="font-semibold text-apple-dark">{user.username}</div>
+                                <div className="text-xs text-secondary font-medium uppercase tracking-wide">{user.role}</div>
+                            </div>
+                            <button onClick={logout} className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors" title="Logout">
+                                <LogOut size={20} />
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
         </nav>
     );

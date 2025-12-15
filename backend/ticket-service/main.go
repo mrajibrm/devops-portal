@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"ticket-service/utils"
@@ -22,6 +23,7 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 var clients = make(map[*websocket.Conn]bool)
+var clientsMutex sync.RWMutex // Mutex to protect clients map
 var broadcast = make(chan Message)
 
 type Message struct {
@@ -223,13 +225,23 @@ func handleWebSocket(c *gin.Context) {
 	if err != nil {
 		return
 	}
-	defer ws.Close()
+	// Do not defer ws.Close() immediately if we were handling loop differently,
+	// but here we block in ReadMessage so it's fine.
+	// Properly manage connection lifetime.
+	defer func() {
+		clientsMutex.Lock()
+		delete(clients, ws)
+		clientsMutex.Unlock()
+		ws.Close()
+	}()
+
+	clientsMutex.Lock()
 	clients[ws] = true
+	clientsMutex.Unlock()
 
 	for {
 		_, _, err := ws.ReadMessage()
 		if err != nil {
-			delete(clients, ws)
 			break
 		}
 	}
@@ -238,9 +250,18 @@ func handleWebSocket(c *gin.Context) {
 func handleMessages() {
 	for {
 		msg := <-broadcast
+		clientsMutex.RLock()
 		for client := range clients {
-			client.WriteJSON(msg)
+			err := client.WriteJSON(msg)
+			if err != nil {
+				log.Printf("error: %v", err)
+				client.Close()
+				// We can't delete here safely while iterating with RLock, 
+				// but handleWebSocket will clean it up on read error or close.
+				// In robust impl, we might collect dead clients and delete later.
+			}
 		}
+		clientsMutex.RUnlock()
 	}
 }
 
