@@ -11,18 +11,19 @@ export default {
             },
             colors: {
                 // SaaS Brand Colors
+                // Corporate Blue Brand Colors
                 brand: {
-                    50: '#eef2ff',
-                    100: '#e0e7ff',
-                    200: '#c7d2fe',
-                    300: '#a5b4fc',
-                    400: '#818cf8',
-                    500: '#6366f1', // Indigo-500 (Primary)
-                    600: '#4f46e5',
-                    700: '#4338ca',
-                    800: '#3730a3',
-                    900: '#312e81',
-                    950: '#1e1b4b',
+                    50: '#eaeffd',  // Very light blue tint
+                    100: '#cdddfe', // Light blue background
+                    200: '#a2bfff', // Soft blue
+                    300: '#6e98fa', // Medium blue
+                    400: '#3b70f6', // Action blue
+                    500: '#0f62fe', // Primary Brand Blue (Corporate/IBM-ish)
+                    600: '#0043ce', // Hover state
+                    700: '#002d9c', // Active state / Header bg
+                    800: '#001d6f', // Deep bg
+                    900: '#001141', // Darkest bg (Sidebar)
+                    950: '#000828', // Almost black blue
                 },
                 // Slate Grays for UI Structure
                 slate: {

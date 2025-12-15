@@ -53,7 +53,7 @@ const UserPortal = () => {
         switch (status) {
             case 'OPEN':
                 return (
-                    <div className="flex items-center gap-2 text-blue-700">
+                    <div className="flex items-center gap-2 text-brand-600">
                         <AlertCircle size={18} />
                         <span className="text-xs font-bold uppercase tracking-wider">Open</span>
                     </div>

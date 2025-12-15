@@ -28,19 +28,25 @@ const Login = () => {
     };
 
     return (
-        <div className="flex items-center justify-center min-h-[80vh]">
-            <div className="card w-full max-w-md shadow-2xl relative overflow-hidden">
+        <div className="flex items-center justify-center min-h-[80vh] bg-slate-50">
+            <div className="card w-full max-w-md shadow-lg border-t-4 border-brand-500 relative overflow-hidden">
                 {/* Decorative Grid Background */}
-                <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'linear-gradient(#30363d 1px, transparent 1px), linear-gradient(90deg, #30363d 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+                <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(#0f62fe 1px, transparent 1px), linear-gradient(90deg, #0f62fe 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
 
-                <div className="relative z-10">
-                    <h2 className="text-3xl font-bold text-center mb-8">Access <span className="text-accent">Portal</span></h2>
+                <div className="relative z-10 p-2">
+                    <div className="text-center mb-8">
+                        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-brand-50 text-brand-600 mb-4">
+                            <User size={24} />
+                        </div>
+                        <h2 className="text-2xl font-bold text-slate-900">Welcome Back</h2>
+                        <p className="text-slate-500 text-sm mt-2">Sign in to your corporate portal</p>
+                    </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div>
-                            <label className="block text-sm font-medium text-secondary mb-2">Username</label>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1">Username</label>
                             <div className="relative">
-                                <User className="absolute left-3 top-2.5 text-secondary" size={18} />
+                                <User className="absolute left-3 top-2.5 text-brand-500/50" size={18} />
                                 <input
                                     type="text"
                                     value={username}
@@ -53,9 +59,9 @@ const Login = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-secondary mb-2">Password</label>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1">Password</label>
                             <div className="relative">
-                                <Lock className="absolute left-3 top-2.5 text-secondary" size={18} />
+                                <Lock className="absolute left-3 top-2.5 text-brand-500/50" size={18} />
                                 <input
                                     type="password"
                                     value={password}

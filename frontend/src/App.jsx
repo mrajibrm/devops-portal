@@ -17,15 +17,15 @@ const Sidebar = () => {
     if (!user) return null;
 
     const navLinkClass = ({ isActive }) =>
-        `nav-item ${isActive ? 'bg-brand-600 text-white shadow-lg' : ''}`;
+        `nav-item ${isActive ? 'active' : ''}`;
 
     return (
-        <aside className="fixed left-0 top-0 bottom-0 w-64 bg-slate-900 text-white flex flex-col z-50 shadow-2xl">
+        <aside className="fixed left-0 top-0 bottom-0 w-64 bg-brand-900 text-white flex flex-col z-50 shadow-2xl border-r border-brand-800">
             {/* Logo Area - Centered */}
-            <div className="h-20 flex items-center justify-center px-6 border-b border-white/5 bg-slate-950">
-                <div className="flex items-center gap-2 text-brand-400">
+            <div className="h-20 flex items-center justify-center px-6 border-b border-brand-800 bg-brand-950">
+                <div className="flex items-center gap-2 text-brand-300">
                     <Terminal size={26} strokeWidth={2.5} />
-                    <span className="text-xl font-bold tracking-tight text-white">DevOps<span className="text-brand-400">Portal</span></span>
+                    <span className="text-xl font-bold tracking-tight text-white">DevOps<span className="text-brand-300">Portal</span></span>
                 </div>
             </div>
 
@@ -57,14 +57,14 @@ const Sidebar = () => {
             </nav>
 
             {/* User Profile - Aligned with Icon */}
-            <div className="p-4 bg-slate-950/50 border-t border-white/5">
-                <div className="flex items-center gap-3 bg-slate-800/50 p-3 rounded-xl border border-white/5">
+            <div className="p-4 bg-brand-950/30 border-t border-brand-800">
+                <div className="flex items-center gap-3 bg-brand-800/40 p-3 rounded-lg border border-brand-700/50">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white shadow-lg">
                         <User size={20} />
                     </div>
                     <div className="flex-1 overflow-hidden">
                         <div className="text-sm font-bold text-white truncate">{user.username}</div>
-                        <div className="text-xs text-brand-300 uppercase truncate font-medium">{user.role}</div>
+                        <div className="text-xs text-brand-200 uppercase truncate font-medium">{user.role}</div>
                     </div>
                     <button onClick={logout} className="p-2 text-slate-400 hover:text-red-400 transition-colors" title="Logout">
                         <LogOut size={18} />
