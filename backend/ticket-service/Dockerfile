@@ -3,10 +3,8 @@ FROM golang:1.20-alpine AS builder
 
 WORKDIR /app
 
-COPY go.mod ./
-# RUN go mod download # Commented out for offline feel, but necessary in real world
-
 COPY . .
+RUN go mod tidy
 RUN go build -o ticket-service main.go
 
 # Runtime Stage
