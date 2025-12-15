@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Server, Activity, Shield } from 'lucide-react';
+import { Plus, Server, Activity, Shield, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 
 const UserPortal = () => {
     const { token } = useAuth();
@@ -50,12 +50,31 @@ const UserPortal = () => {
     };
 
     const StatusBadge = ({ status }) => {
-        const styles = {
-            OPEN: 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-700/10',
-            IN_PROGRESS: 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/20',
-            RESOLVED: 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/20'
-        };
-        return <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wide ${styles[status]}`}>{status}</span>;
+        switch (status) {
+            case 'OPEN':
+                return (
+                    <div className="flex items-center gap-2 text-blue-700">
+                        <AlertCircle size={18} />
+                        <span className="text-xs font-bold uppercase tracking-wider">Open</span>
+                    </div>
+                );
+            case 'IN_PROGRESS':
+                return (
+                    <div className="flex items-center gap-2 text-amber-600">
+                        <Clock size={18} className="animate-pulse" />
+                        <span className="text-xs font-bold uppercase tracking-wider">In Progress</span>
+                    </div>
+                );
+            case 'RESOLVED':
+                return (
+                    <div className="flex items-center gap-2 text-emerald-600">
+                        <CheckCircle2 size={18} />
+                        <span className="text-xs font-bold uppercase tracking-wider">Resolved</span>
+                    </div>
+                );
+            default:
+                return <span className="text-slate-500">{status}</span>;
+        }
     };
 
     // Stunner Creation View
@@ -95,43 +114,51 @@ const UserPortal = () => {
                         </div>
                     </div>
                 ) : (
-                    <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-saas-lg border border-slate-200 overflow-hidden">
+                    <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-saas-lg border border-slate-200 overflow-hidden">
                         <div className="bg-slate-50 px-8 py-6 border-b border-slate-200 flex justify-between items-center">
-                            <div>
-                                <h2 className="text-xl font-bold text-slate-900">{selectedTemplate.name}</h2>
-                                <p className="text-sm text-slate-500">Please provide the details below.</p>
+                            <div className="flex items-center gap-4">
+                                <div className="p-2 bg-white border border-slate-200 rounded-lg text-brand-600">
+                                    {selectedTemplate.category === 'Infrastructure' ? <Server size={20} /> : selectedTemplate.category === 'IAM' ? <Shield size={20} /> : <Activity size={20} />}
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-slate-900">{selectedTemplate.name}</h2>
+                                    <p className="text-sm text-slate-500">Authorized request form</p>
+                                </div>
                             </div>
                             <button onClick={() => setSelectedTemplate(null)} className="text-slate-400 hover:text-slate-600 text-sm font-medium">Change Service</button>
                         </div>
 
-                        <form onSubmit={handleCreate} className="p-8 space-y-6">
-                            {selectedTemplate.fields.map(field => (
-                                <div key={field.name}>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2 capitalize">{field.label}</label>
-                                    {field.type === 'select' ? (
-                                        <div className="relative">
-                                            <select
+                        <form onSubmit={handleCreate} className="p-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                                {selectedTemplate.fields.map(field => (
+                                    <div key={field.name} className={field.type === 'textarea' ? 'md:col-span-2' : ''}>
+                                        <label className="block text-sm font-semibold text-slate-700 mb-2 capitalize">{field.label} <span className="text-red-500">*</span></label>
+                                        {field.type === 'select' ? (
+                                            <div className="relative">
+                                                <select
+                                                    onChange={e => setFormData({ ...formData, [field.name]: e.target.value })}
+                                                    className="input-field appearance-none bg-slate-50"
+                                                    required
+                                                >
+                                                    <option value="">Select...</option>
+                                                    {field.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                                </select>
+                                                <div className="absolute right-3 top-2.5 pointer-events-none text-slate-400">▼</div>
+                                            </div>
+                                        ) : (
+                                            <input
+                                                type={field.type === 'number' ? 'number' : 'text'}
                                                 onChange={e => setFormData({ ...formData, [field.name]: e.target.value })}
-                                                className="input-field appearance-none"
-                                            >
-                                                <option value="">Select option...</option>
-                                                {field.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                                            </select>
-                                            <div className="absolute right-3 top-2.5 pointer-events-none text-slate-400">▼</div>
-                                        </div>
-                                    ) : (
-                                        <input
-                                            type={field.type === 'number' ? 'number' : 'text'}
-                                            onChange={e => setFormData({ ...formData, [field.name]: e.target.value })}
-                                            className="input-field"
-                                            placeholder={`Ex: ${field.label}...`}
-                                            required
-                                        />
-                                    )}
-                                </div>
-                            ))}
+                                                className="input-field bg-slate-50"
+                                                placeholder={`Enter details...`}
+                                                required
+                                            />
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
 
-                            <div className="pt-4 flex gap-4">
+                            <div className="flex gap-4 pt-6 border-t border-slate-100">
                                 <button type="button" onClick={() => setSelectedTemplate(null)} className="btn-secondary w-1/3">Cancel</button>
                                 <button type="submit" className="btn-primary flex-1 shadow-glow hover:shadow-glow/80">Submit Request</button>
                             </div>
@@ -159,24 +186,37 @@ const UserPortal = () => {
                 <table className="w-full text-left border-collapse">
                     <thead>
                         <tr className="bg-slate-50 border-b border-slate-200">
-                            <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Ticket ID</th>
-                            <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Subject</th>
-                            <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                            <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Created</th>
+                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider border-r border-slate-200 last:border-r-0">Ticket ID</th>
+                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider border-r border-slate-200 last:border-r-0">Subject</th>
+                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider border-r border-slate-200 last:border-r-0">Status</th>
+                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-slate-200">
                         {tickets.map(t => (
-                            <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
-                                <td className="px-6 py-3 font-mono text-xs text-slate-500">{t.id.slice(0, 8)}</td>
-                                <td className="px-6 py-3 font-medium text-slate-900">{t.title}</td>
-                                <td className="px-6 py-3"><StatusBadge status={t.status} /></td>
-                                <td className="px-6 py-3 text-sm text-slate-500">{new Date(t.created_at).toLocaleDateString()}</td>
+                            <tr key={t.id} className="hover:bg-slate-50 transition-colors">
+                                <td className="px-6 py-4 font-mono text-xs text-slate-500 border-r border-slate-200 last:border-r-0 font-medium">
+                                    {t.id.slice(0, 8)}
+                                </td>
+                                <td className="px-6 py-4 font-medium text-slate-900 border-r border-slate-200 last:border-r-0">
+                                    {t.title}
+                                </td>
+                                <td className="px-6 py-4 border-r border-slate-200 last:border-r-0">
+                                    <StatusBadge status={t.status} />
+                                </td>
+                                <td className="px-6 py-4 text-sm text-slate-500">
+                                    {new Date(t.created_at).toLocaleDateString()}
+                                </td>
                             </tr>
                         ))}
                         {tickets.length === 0 && (
                             <tr>
-                                <td colSpan="4" className="px-6 py-12 text-center text-slate-400 italic">No tickets found. Create one to get started.</td>
+                                <td colSpan="4" className="px-6 py-16 text-center text-slate-400 italic bg-slate-50/50">
+                                    <div className="flex flex-col items-center gap-2">
+                                        <AlertCircle size={24} className="opacity-20" />
+                                        <span>No tickets found. Create one to get started.</span>
+                                    </div>
+                                </td>
                             </tr>
                         )}
                     </tbody>
