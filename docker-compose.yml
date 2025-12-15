@@ -91,9 +91,12 @@ services:
     restart: always
     networks:
       - devops-net
-  # frontend:
-  #   build: ./frontend
-  #   ...
+  frontend:
+    build: ./frontend
+    container_name: devops-frontend
+    restart: always
+    networks:
+      - devops-net
 
 networks:
   devops-net:
