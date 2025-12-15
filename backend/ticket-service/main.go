@@ -158,17 +158,24 @@ func createTicket(c *gin.Context) {
 	username, _ := c.Get("username")
 	t.OwnerID = fmt.Sprintf("%v", username)
 
-	var id string
-	err := db.QueryRow("INSERT INTO tickets (title, description, status, severity, owner_id) VALUES ($1, $2, 'OPEN', $3, $4) RETURNING id", 
-		t.Title, t.Description, t.Severity, t.OwnerID).Scan(&id)
+	// Use QueryRow to execute INSERT and get back the generated defaults (id, status, created_at)
+	// We assume input T might have Title, Description, Severity.
+	// We RETURNING all fields to ensure our struct is perfectly synced with DB state.
+	err := db.QueryRow(`
+		INSERT INTO tickets (title, description, status, severity, owner_id) 
+		VALUES ($1, $2, 'OPEN', $3, $4) 
+		RETURNING id, title, description, status, severity, owner_id, created_at`, 
+		t.Title, t.Description, t.Severity, t.OwnerID).
+		Scan(&t.ID, &t.Title, &t.Description, &t.Status, &t.Severity, &t.OwnerID, &t.CreatedAt)
 	
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
 
-	broadcast <- Message{Type: "NEW_TICKET", Data: gin.H{"id": id, "title": t.Title}}
-	c.JSON(201, gin.H{"id": id})
+	// Broadcast FULL ticket object
+	broadcast <- Message{Type: "NEW_TICKET", Data: t}
+	c.JSON(201, t)
 }
 
 func updateTicket(c *gin.Context) {
@@ -181,18 +188,26 @@ func updateTicket(c *gin.Context) {
 		return
 	}
 
-	// Update
-	_, err := db.Exec("UPDATE tickets SET status=$1, updated_at=NOW() WHERE id=$2", input.Status, id)
+	// Update and RETURNING the full row to get the authoritative state
+	var t Ticket
+	err := db.QueryRow(`
+		UPDATE tickets 
+		SET status=$1, updated_at=NOW() 
+		WHERE id=$2 
+		RETURNING id, title, description, status, severity, owner_id, created_at`, 
+		input.Status, id).
+		Scan(&t.ID, &t.Title, &t.Description, &t.Status, &t.Severity, &t.OwnerID, &t.CreatedAt)
+
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Audit Log (Simplified: writing to same DB or separate in real world)
-	// In strict impl, we'd write to audit_log_db via a separate connection or Service.
+	// Audit Log (Simplified)
 	
-	broadcast <- Message{Type: "TICKET_UPDATED", Data: gin.H{"id": id, "status": input.Status}}
-	c.JSON(200, gin.H{"status": "updated"})
+	// Broadcast FULL updated ticket
+	broadcast <- Message{Type: "TICKET_UPDATED", Data: t}
+	c.JSON(200, t)
 }
 
 func fetchExternal(c *gin.Context) {
