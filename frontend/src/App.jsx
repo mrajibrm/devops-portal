@@ -2,14 +2,14 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, NavLink, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
-import { LayoutDashboard, Ticket, LogOut, Terminal, Layers, PlusCircle, Settings, User } from 'lucide-react';
+import { LayoutDashboard, Ticket, LogOut, Terminal, Layers, PlusCircle, Settings, User, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Pages
 import Login from './pages/Login';
 import UserPortal from './pages/UserPortal';
 import EngineerCockpit from './pages/EngineerCockpit';
 
-const Sidebar = () => {
+const Sidebar = ({ collapsed, toggle }) => {
     const { user, logout } = useAuth();
     const location = useLocation();
 
@@ -17,56 +17,66 @@ const Sidebar = () => {
     if (!user) return null;
 
     const navLinkClass = ({ isActive }) =>
-        `nav-item ${isActive ? 'active' : ''}`;
+        `nav-item ${isActive ? 'active' : ''} ${collapsed ? 'justify-center px-2' : ''}`;
 
     return (
-        <aside className="fixed left-0 top-0 bottom-0 w-64 bg-brand-900 text-white flex flex-col z-50 shadow-2xl border-r border-brand-800">
-            {/* Logo Area - Centered */}
-            <div className="h-20 flex items-center justify-center px-6 border-b border-brand-800 bg-brand-950">
-                <div className="flex items-center gap-2 text-brand-300">
-                    <Terminal size={26} strokeWidth={2.5} />
-                    <span className="text-xl font-bold tracking-tight text-white">DevOps<span className="text-brand-300">Portal</span></span>
+        <aside className={`fixed left-0 top-0 bottom-0 bg-brand-900 text-white flex flex-col z-50 shadow-2xl border-r border-brand-800 transition-all duration-300 ${collapsed ? 'w-20' : 'w-64'}`}>
+            {/* Logo Area */}
+            <div className={`h-20 flex items-center ${collapsed ? 'justify-center' : 'justify-center px-6'} border-b border-brand-800 bg-brand-950 transition-all`}>
+                <div className="flex items-center gap-2 text-brand-300 overflow-hidden">
+                    <Terminal size={26} strokeWidth={2.5} className="flex-shrink-0" />
+                    {!collapsed && <span className="text-xl font-bold tracking-tight text-white whitespace-nowrap opacity-100 transition-opacity duration-200">
+                        DevOps<span className="text-brand-300">Hub</span>
+                    </span>}
                 </div>
             </div>
 
-            {/* Navigation - Spaced Evenly */}
-            <nav className="flex-1 py-8 px-4 flex flex-col gap-4">
-                <div className="px-2 mb-2 text-xs font-bold text-slate-500 uppercase tracking-widest">Menu</div>
+            {/* Navigation */}
+            <nav className="flex-1 py-8 px-3 flex flex-col gap-4 overflow-x-hidden">
+                {!collapsed && <div className="px-2 mb-2 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Menu</div>}
 
                 {['user', 'admin'].includes(user.role) && (
-                    <NavLink to="/portal" className={navLinkClass}>
-                        <LayoutDashboard size={20} />
-                        <span className="text-base">My Portal</span>
+                    <NavLink to="/portal" className={navLinkClass} title={collapsed ? "My Portal" : ""}>
+                        <LayoutDashboard size={20} className="flex-shrink-0" />
+                        {!collapsed && <span className="text-base whitespace-nowrap">My Portal</span>}
                     </NavLink>
                 )}
 
                 {['devops', 'admin'].includes(user.role) && (
-                    <NavLink to="/cockpit" className={navLinkClass}>
-                        <Layers size={20} />
-                        <span className="text-base">Engineer Cockpit</span>
+                    <NavLink to="/cockpit" className={navLinkClass} title={collapsed ? "Engineer Cockpit" : ""}>
+                        <Layers size={20} className="flex-shrink-0" />
+                        {!collapsed && <span className="text-base whitespace-nowrap">Engineer Cockpit</span>}
                     </NavLink>
                 )}
 
                 <div className="my-2 border-t border-white/5"></div>
 
-                <div className="px-2 mb-2 text-xs font-bold text-slate-500 uppercase tracking-widest">System</div>
-                <a href="#" className="nav-item cursor-not-allowed opacity-50">
-                    <Settings size={20} />
-                    <span className="text-base">Settings</span>
+                {!collapsed && <div className="px-2 mb-2 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">System</div>}
+                <a href="#" className={`nav-item cursor-not-allowed opacity-50 ${collapsed ? 'justify-center px-2' : ''}`}>
+                    <Settings size={20} className="flex-shrink-0" />
+                    {!collapsed && <span className="text-base whitespace-nowrap">Settings</span>}
                 </a>
             </nav>
 
-            {/* User Profile - Aligned with Icon */}
-            <div className="p-4 bg-brand-950/30 border-t border-brand-800">
-                <div className="flex items-center gap-3 bg-brand-800/40 p-3 rounded-lg border border-brand-700/50">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white shadow-lg">
+            {/* Toggle Button */}
+            <button
+                onClick={toggle}
+                className="mx-auto mb-4 p-1.5 rounded-full bg-brand-800 text-brand-300 hover:text-white hover:bg-brand-700 transition-colors border border-brand-700"
+            >
+                {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            </button>
+
+            {/* User Profile */}
+            <div className={`p-4 bg-brand-950/30 border-t border-brand-800 transition-all ${collapsed ? 'px-2' : ''}`}>
+                <div className={`flex items-center gap-3 bg-brand-800/40 p-2 rounded-lg border border-brand-700/50 ${collapsed ? 'justify-center flex-col gap-2' : ''}`}>
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white shadow-lg flex-shrink-0">
                         <User size={20} />
                     </div>
-                    <div className="flex-1 overflow-hidden">
+                    {!collapsed && <div className="flex-1 overflow-hidden min-w-0">
                         <div className="text-sm font-bold text-white truncate">{user.username}</div>
                         <div className="text-xs text-brand-200 uppercase truncate font-medium">{user.role}</div>
-                    </div>
-                    <button onClick={logout} className="p-2 text-slate-400 hover:text-red-400 transition-colors" title="Logout">
+                    </div>}
+                    <button onClick={logout} className={`text-slate-400 hover:text-red-400 transition-colors ${collapsed ? 'mt-1' : 'p-2'}`} title="Logout">
                         <LogOut size={18} />
                     </button>
                 </div>
@@ -84,10 +94,12 @@ const ProtectedRoute = ({ children, roles }) => {
 
 const Layout = ({ children }) => {
     const { user } = useAuth();
+    const [collapsed, setCollapsed] = React.useState(false);
+
     return (
         <div className="min-h-screen bg-slate-50 flex">
-            <Sidebar />
-            <main className={`flex-1 transition-all duration-300 ${user ? 'ml-64' : ''}`}>
+            <Sidebar collapsed={collapsed} toggle={() => setCollapsed(!collapsed)} />
+            <main className={`flex-1 transition-all duration-300 ${user ? (collapsed ? 'ml-20' : 'ml-64') : ''}`}>
                 <div className="container mx-auto p-8 max-w-7xl">
                     {children}
                 </div>
