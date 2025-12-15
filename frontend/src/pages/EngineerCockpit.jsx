@@ -42,9 +42,13 @@ const EngineerCockpit = () => {
         ws.onmessage = (event) => {
             try {
                 const msg = JSON.parse(event.data);
-                if (msg.type === 'NEW_TICKET' || msg.type === 'TICKET_UPDATED') {
-                    console.log('Real-time update received:', msg);
-                    fetchTickets(); // Simple re-fetch strategy for consistency
+                if (msg.type === 'NEW_TICKET') {
+                    console.log('New ticket received:', msg.data);
+                    setTickets(prev => [msg.data, ...prev]);
+                    flashPulse();
+                } else if (msg.type === 'TICKET_UPDATED') {
+                    console.log('Ticket updated:', msg.data);
+                    setTickets(prev => prev.map(t => t.id === msg.data.id ? msg.data : t));
                     flashPulse();
                 }
             } catch (e) {
