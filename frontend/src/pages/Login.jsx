@@ -75,7 +75,7 @@ const Login = () => {
 
                         {error && <div className="text-danger text-sm text-center bg-danger/10 p-2 rounded">{error}</div>}
 
-                        <button type="submit" className="btn w-full py-2.5 text-base">
+                        <button type="submit" className="btn btn-primary w-full py-2.5 text-base">
                             Authenticate
                         </button>
                     </form>
