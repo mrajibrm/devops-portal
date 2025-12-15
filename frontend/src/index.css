@@ -4,18 +4,42 @@
 
 @layer base {
   body {
-    @apply antialiased text-apple-dark bg-apple-gray;
-    /* Smooth Font Rendering */
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    @apply antialiased text-slate-800 bg-slate-50;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 }
 
-@layer utilities {
-  .glass {
-    @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-sm;
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed;
   }
-  .glass-dark {
-    @apply bg-black/70 backdrop-blur-md border border-white/10 shadow-sm;
+
+  .btn-primary {
+    @apply btn bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800 shadow-saas-sm hover:shadow-saas-md focus:ring-brand-500;
+  }
+
+  .btn-secondary {
+    @apply btn bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:text-slate-900 shadow-saas-sm focus:ring-slate-200;
+  }
+
+  .btn-ghost {
+    @apply btn text-slate-600 hover:bg-slate-100 hover:text-slate-900;
+  }
+
+  .card {
+    @apply bg-white border border-slate-200 rounded-xl shadow-saas-sm;
+  }
+
+  .input-field {
+    @apply w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors placeholder:text-slate-400;
+  }
+
+  .nav-item {
+    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-slate-400 hover:text-white hover:bg-white/10;
+  }
+
+  .nav-item.active {
+    @apply text-white bg-brand-600/20 text-brand-400;
+    /* Sidebar active state style */
   }
 }

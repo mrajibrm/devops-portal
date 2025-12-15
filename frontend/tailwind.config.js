@@ -7,32 +7,43 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: [
-                    '-apple-system',
-                    'BlinkMacSystemFont',
-                    '"Segoe UI"',
-                    'Roboto',
-                    '"Helvetica Neue"',
-                    'Arial',
-                    'sans-serif'
-                ],
+                sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
             },
             colors: {
-                // Apple-like System Colors
-                'apple-gray': '#f5f5f7', // Background
-                'apple-blue': '#0071e3', // Primary Action
-                'apple-dark': '#1d1d1f', // Text Primary
-                'apple-light': '#86868b', // Text Secondary
-                // Semantic
-                primary: '#0071e3',
-                secondary: '#86868b',
-                success: '#34c759',
-                warning: '#ff9f0a',
-                danger: '#ff3b30',
-
-                // Dark Mode adaptations
-                'dark-bg': '#000000',
-                'dark-card': '#1c1c1e',
+                // SaaS Brand Colors
+                brand: {
+                    50: '#eef2ff',
+                    100: '#e0e7ff',
+                    200: '#c7d2fe',
+                    300: '#a5b4fc',
+                    400: '#818cf8',
+                    500: '#6366f1', // Indigo-500 (Primary)
+                    600: '#4f46e5',
+                    700: '#4338ca',
+                    800: '#3730a3',
+                    900: '#312e81',
+                    950: '#1e1b4b',
+                },
+                // Slate Grays for UI Structure
+                slate: {
+                    25: '#f8fafc', // Very light bg
+                    50: '#f8fafc',
+                    100: '#f1f5f9',
+                    200: '#e2e8f0', // Borders
+                    300: '#cbd5e1',
+                    400: '#94a3b8',
+                    500: '#64748b', // Secondary text
+                    600: '#475569',
+                    700: '#334155',
+                    800: '#1e293b', // Primary text
+                    900: '#0f172a', // Sidebar bg
+                }
+            },
+            boxShadow: {
+                'saas-sm': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                'saas-md': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                'saas-lg': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                'glow': '0 0 15px rgba(99, 102, 241, 0.5)',
             }
         },
     },
