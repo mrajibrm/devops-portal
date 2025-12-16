@@ -29,7 +29,7 @@ const Sidebar = ({ collapsed, toggle }) => {
                 <div className="flex items-center gap-2 text-brand-300 overflow-hidden">
                     <Terminal size={26} strokeWidth={2.5} className="flex-shrink-0" />
                     {!collapsed && <span className="text-xl font-bold tracking-tight text-white whitespace-nowrap opacity-100 transition-opacity duration-200">
-                        DevOps<span className="text-brand-300">Hub</span>
+                        Super<span className="text-brand-300">Ticket</span>
                     </span>}
                 </div>
             </div>
