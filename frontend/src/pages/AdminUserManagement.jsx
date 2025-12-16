@@ -26,7 +26,7 @@ const AdminUserManagement = () => {
         setLoading(true);
         setError(null);
         try {
-            const res = await axios.get('/auth/admin/users', {
+            const res = await axios.get('/api/auth/admin/users', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (Array.isArray(res.data)) {
@@ -58,7 +58,7 @@ const AdminUserManagement = () => {
         }
 
         try {
-            const res = await axios.post('/auth/admin/users', payload, {
+            const res = await axios.post('/api/auth/admin/users', payload, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setShowCreateModal(false);
@@ -79,7 +79,7 @@ const AdminUserManagement = () => {
     const handleResetPassword = async (userId) => {
         if (!window.confirm("Are you sure you want to reset this user's password?")) return;
         try {
-            const res = await axios.post(`/auth/admin/users/${userId}/reset-password`, {}, {
+            const res = await axios.post(`/api/auth/admin/users/${userId}/reset-password`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             alert(`Password reset! Temporary password: ${res.data.tempPassword}`);
