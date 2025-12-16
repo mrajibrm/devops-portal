@@ -119,20 +119,165 @@ app.get('/auth/verify', (req, res) => {
     });
 });
 
-// Seed Data (For Demo - creates generic users if table is empty)
-async function seedUsers() {
+// --- Admin Routes ---
+
+// Middleware to check for Admin Role
+function authenticateAdmin(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (!token) return res.sendStatus(401);
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) return res.sendStatus(403);
+        if (user.role !== 'admin') return res.status(403).json({ error: "Admin access required" });
+        req.user = user;
+        next();
+    });
+}
+
+// Get All Users
+app.get('/auth/admin/users', authenticateAdmin, async (req, res) => {
     try {
-        // Ensure table exists (Normally in init.sql, but here for robustness)
+        const result = await pool.query('SELECT id, username, email, full_name, role, designation, department, phone, created_at FROM users ORDER BY id');
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+// Create User
+app.post('/auth/admin/users', authenticateAdmin, async (req, res) => {
+    let { email, password, role, full_name, phone, designation, department } = req.body;
+    if (!email || !role) {
+        return res.status(400).json({ error: "Email and role are required" });
+    }
+
+    try {
+        // Derive username from email (before @)
+        const username = email.split('@')[0];
+
+        // Check if username or email exists
+        const check = await pool.query('SELECT * FROM users WHERE username = $1 OR email = $2', [username, email]);
+        if (check.rows.length > 0) {
+            return res.status(409).json({ error: "Username or Email already exists" });
+        }
+
+        let generatedPassword = null;
+        if (!password) {
+            generatedPassword = Math.random().toString(36).slice(-8); // Simple random string
+            password = generatedPassword;
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hash = await bcrypt.hash(password, salt);
+
+        const result = await pool.query(
+            `INSERT INTO users (username, password_hash, role, email, full_name, phone, designation, department) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+             RETURNING id, username, email, full_name, role`,
+            [username, hash, role, email, full_name, phone, designation, department]
+        );
+
+        // Return the password if it was generated so Admin can see it
+        const responseData = { ...result.rows[0] };
+        if (generatedPassword) {
+            responseData.tempPassword = generatedPassword;
+        }
+
+        res.status(201).json(responseData);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+// Update User
+app.put('/auth/admin/users/:id', authenticateAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { role, full_name, phone, designation, department } = req.body;
+
+    try {
+        const result = await pool.query(
+            `UPDATE users 
+             SET role = COALESCE($1, role), 
+                 full_name = COALESCE($2, full_name), 
+                 phone = COALESCE($3, phone), 
+                 designation = COALESCE($4, designation), 
+                 department = COALESCE($5, department)
+             WHERE id = $6
+             RETURNING id, username, email, full_name, role, designation, department, phone`,
+            [role, full_name, phone, designation, department, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "User not found" });
+        }
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+// Reset Password
+app.post('/auth/admin/users/:id/reset-password', authenticateAdmin, async (req, res) => {
+    const { id } = req.params;
+    // In a real app, we might email this temporary password. Here we return it.
+    const tempPassword = Math.random().toString(36).slice(-8);
+
+    try {
+        const salt = await bcrypt.genSalt(10);
+        const hash = await bcrypt.hash(tempPassword, salt);
+
+        const result = await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2 RETURNING id, username', [hash, id]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // TODO: Send email
+        console.log(`Password reset for user ${result.rows[0].username} to: ${tempPassword}`);
+
+        res.json({ message: "Password reset successful", tempPassword });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+
+
+// Seed & Migrate Data
+async function ensureSchemaAndSeed() {
+    try {
+        console.log("Checking DB schema...");
+
+        // 1. Ensure basics
         await pool.query(`
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
                 username VARCHAR(50) UNIQUE NOT NULL,
                 password_hash TEXT NOT NULL,
-                role VARCHAR(20) NOT NULL
+                role VARCHAR(20) NOT NULL,
+                email VARCHAR(100) UNIQUE,
+                full_name VARCHAR(100),
+                phone VARCHAR(20),
+                designation VARCHAR(50),
+                department VARCHAR(50),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);
 
-        // Check availability
+        // 2. Add columns if missing (Simple Migration)
+        const columns = ['email', 'full_name', 'phone', 'designation', 'department'];
+        for (const col of columns) {
+            try {
+                await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ${col} VARCHAR(100)`);
+            } catch (ignore) { /* ignore if exists */ }
+        }
+
+        // 3. Seed if empty
         const check = await pool.query('SELECT count(*) FROM users');
         if (parseInt(check.rows[0].count) === 0) {
             console.log("Seeding verified users...");
@@ -140,24 +285,36 @@ async function seedUsers() {
 
             // User: alice / user123
             const p1 = await bcrypt.hash('user123', salt);
-            await pool.query("INSERT INTO users (username, password_hash, role) VALUES ($1, $2, $3)", ['alice', p1, 'user']);
+            await pool.query(
+                `INSERT INTO users (username, password_hash, role, email, full_name, designation, department) 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                ['alice', p1, 'user', 'alice@devops.com', 'Alice Smith', 'Junior Dev', 'Engineering']
+            );
 
             // DevOps: bob / devops123
             const p2 = await bcrypt.hash('devops123', salt);
-            await pool.query("INSERT INTO users (username, password_hash, role) VALUES ($1, $2, $3)", ['bob', p2, 'devops']);
+            await pool.query(
+                `INSERT INTO users (username, password_hash, role, email, full_name, designation, department) 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                ['bob', p2, 'devops', 'bob@devops.com', 'Bob Jones', 'DevOps Engineer', 'Operations']
+            );
 
             // Admin: admin / admin123
             const p3 = await bcrypt.hash('admin123', salt);
-            await pool.query("INSERT INTO users (username, password_hash, role) VALUES ($1, $2, $3)", ['admin', p3, 'admin']);
+            await pool.query(
+                `INSERT INTO users (username, password_hash, role, email, full_name, designation, department) 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                ['admin', p3, 'admin', 'admin@devops.com', 'Admin User', 'System Administrator', 'IT']
+            );
             console.log("Seeding complete.");
         }
     } catch (e) {
-        console.error("Seeding error:", e);
+        console.error("Schema/Seeding error:", e);
     }
 }
 
 // Start Server
 app.listen(PORT, async () => {
     console.log(`Auth Service running on port ${PORT}`);
-    await seedUsers();
+    await ensureSchemaAndSeed();
 });

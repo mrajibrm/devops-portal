@@ -9,6 +9,7 @@ import { LayoutDashboard, Ticket, LogOut, Terminal, Layers, PlusCircle, Settings
 import Login from './pages/Login';
 import UserPortal from './pages/UserPortal';
 import EngineerCockpit from './pages/EngineerCockpit';
+import AdminUserManagement from './pages/AdminUserManagement';
 
 const Sidebar = ({ collapsed, toggle }) => {
     const { user, logout } = useAuth();
@@ -47,6 +48,13 @@ const Sidebar = ({ collapsed, toggle }) => {
                     <NavLink to="/cockpit" className={navLinkClass} title={collapsed ? "Engineer Cockpit" : ""}>
                         <Layers size={20} className="flex-shrink-0" />
                         {!collapsed && <span className="text-base whitespace-nowrap">Engineer Cockpit</span>}
+                    </NavLink>
+                )}
+
+                {user.role === 'admin' && (
+                    <NavLink to="/admin/users" className={navLinkClass} title={collapsed ? "User Management" : ""}>
+                        <User size={20} className="flex-shrink-0" />
+                        {!collapsed && <span className="text-base whitespace-nowrap">Manage Users</span>}
                     </NavLink>
                 )}
 
@@ -129,6 +137,12 @@ const App = () => {
                                 <Route path="/cockpit" element={
                                     <ProtectedRoute roles={['devops', 'admin']}>
                                         <EngineerCockpit />
+                                    </ProtectedRoute>
+                                } />
+
+                                <Route path="/admin/users" element={
+                                    <ProtectedRoute roles={['admin']}>
+                                        <AdminUserManagement />
                                     </ProtectedRoute>
                                 } />
                             </Routes>

@@ -103,13 +103,19 @@ export const TicketProvider = ({ children }) => {
         return res.data;
     };
 
+    const getTicketHistory = async (id) => {
+        const res = await axios.get(`/api/tickets/${id}/history`, { headers: { Authorization: `Bearer ${token}` } });
+        return res.data;
+    };
+
     const value = {
         tickets,
         loading,
         lastEvent,
         createTicket,
         updateTicketStatus,
-        fetchExternalData
+        fetchExternalData,
+        getTicketHistory
     };
 
     return (
