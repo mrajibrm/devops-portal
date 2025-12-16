@@ -284,6 +284,11 @@ async function ensureSchemaAndSeed() {
             } catch (ignore) { /* ignore if exists */ }
         }
 
+        // 3. Add created_at if missing (TIMESTAMP)
+        try {
+            await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`);
+        } catch (ignore) { }
+
         // 3. Seed if empty
         const check = await pool.query('SELECT count(*) FROM users');
         if (parseInt(check.rows[0].count) === 0) {
