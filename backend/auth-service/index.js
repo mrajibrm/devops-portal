@@ -16,8 +16,7 @@ app.use(helmet());
 const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:3000',
-    'http://34.171.216.33',
-    'http://34.171.216.33:80'
+    'https://34.171.216.33'
 ];
 
 app.use(cors({
