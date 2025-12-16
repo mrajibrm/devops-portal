@@ -29,7 +29,13 @@ const AdminUserManagement = () => {
             const res = await axios.get('/auth/admin/users', {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setUsers(res.data);
+            if (Array.isArray(res.data)) {
+                setUsers(res.data);
+            } else {
+                console.error("API response is not an array:", res.data);
+                setUsers([]);
+                setError("Backend API mismatch. Please rebuild auth-service container.");
+            }
         } catch (err) {
             console.error("Failed to fetch users", err);
             setError("Failed to fetch users. Ensure you have Admin privileges.");
