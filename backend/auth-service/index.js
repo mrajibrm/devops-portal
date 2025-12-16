@@ -6,12 +6,22 @@ const jwt = require('jsonwebtoken');
 const helmet = require('helmet');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
+const cookieParser = require('cookie-parser');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Security Middleware
 app.use(helmet());
+app.use(helmet.contentSecurityPolicy({
+    directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"], // Add 'unsafe-inline' if absolutely necessary for specific in-line scripts
+        objectSrc: ["'none'"],
+        upgradeInsecureRequests: [],
+    },
+}));
+app.use(cookieParser());
 // CORS Configuration
 const allowedOrigins = [
     'http://localhost:5173',
@@ -100,7 +110,15 @@ app.post('/auth/login', loginLimiter, async (req, res) => {
             { expiresIn: '7d' }
         );
 
-        res.json({ accessToken, refreshToken, role: user.role });
+        // Store Refresh Token in HttpOnly Cookie
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+            sameSite: 'strict', // Prevent CSRF
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
+
+        res.json({ accessToken, role: user.role });
 
     } catch (err) {
         console.error(err);
@@ -110,21 +128,31 @@ app.post('/auth/login', loginLimiter, async (req, res) => {
 
 // Refresh Token
 app.post('/auth/refresh', async (req, res) => {
-    const { refreshToken } = req.body;
+    const refreshToken = req.cookies.refreshToken; // Read from cookie
     if (!refreshToken) return res.sendStatus(401);
 
     jwt.verify(refreshToken, REFRESH_SECRET, (err, user) => {
         if (err) return res.sendStatus(403);
 
-        // Issue new Access Token (Mocking fetching role again for simplicity)
-        // In real app, fetch user to get latest role
+        // TODO: Ideally check DB if user is still active/valid
+
         const accessToken = jwt.sign(
-            { id: user.id, username: user.username, role: 'user' }, // Simplified
+            { id: user.id, username: user.username, role: 'user' }, // Note: Role might be stale if not fetched from DB
             JWT_SECRET,
             { expiresIn: '15m' }
         );
         res.json({ accessToken });
     });
+});
+
+// Logout
+app.post('/auth/logout', (req, res) => {
+    res.clearCookie('refreshToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+    });
+    res.json({ message: "Logged out successfully" });
 });
 
 // Verify Token (Middleware helper or endpoint)
