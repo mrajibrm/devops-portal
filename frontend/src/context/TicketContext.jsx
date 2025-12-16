@@ -69,7 +69,11 @@ export const TicketProvider = ({ children }) => {
     const handleMessage = (msg) => {
         setLastEvent(Date.now());
         if (msg.type === 'NEW_TICKET') {
-            setTickets(prev => [msg.data, ...prev]);
+            setTickets(prev => {
+                // Prevent duplicate if we already added it optimistically or via previous WS message
+                if (prev.some(t => t.id === msg.data.id)) return prev;
+                return [msg.data, ...prev];
+            });
         } else if (msg.type === 'TICKET_UPDATED') {
             setTickets(prev => prev.map(t => t.id === msg.data.id ? msg.data : t));
         }
@@ -77,13 +81,21 @@ export const TicketProvider = ({ children }) => {
 
     // Actions
     const createTicket = async (payload) => {
-        // Optimistic update could go here, but for now we rely on API response + WS
         const res = await axios.post('/api/tickets', payload, { headers: { Authorization: `Bearer ${token}` } });
-        return res.data;
+        const newTicket = res.data;
+        // Immediate local update
+        setTickets(prev => {
+            if (prev.some(t => t.id === newTicket.id)) return prev;
+            return [newTicket, ...prev];
+        });
+        return newTicket;
     };
 
     const updateTicketStatus = async (id, status) => {
-        await axios.patch(`/api/tickets/${id}`, { status }, { headers: { Authorization: `Bearer ${token}` } });
+        const res = await axios.patch(`/api/tickets/${id}`, { status }, { headers: { Authorization: `Bearer ${token}` } });
+        const updatedTicket = res.data;
+        // Immediate local update
+        setTickets(prev => prev.map(t => t.id === updatedTicket.id ? updatedTicket : t));
     };
 
     const fetchExternalData = async (id, url) => {

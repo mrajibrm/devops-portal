@@ -233,11 +233,27 @@ func fetchExternal(c *gin.Context) {
 		return
 	}
 
-	// 2. Attach Note to Ticket
+	// 2. Attach Note to Ticket and Return Updated Ticket
 	note := fmt.Sprintf("External Data Fetch [%s]: %s", input.URL, data)
-	_, err = db.Exec("UPDATE tickets SET description = description || $1 WHERE id=$2", "\n\n"+note, id)
 	
-	c.JSON(200, gin.H{"message": "Data fetched and attached", "data": data})
+	var t Ticket
+	err = db.QueryRow(`
+		UPDATE tickets 
+		SET description = description || $1, updated_at=NOW() 
+		WHERE id=$2 
+		RETURNING id, title, description, status, severity, owner_id, created_at`, 
+		"\n\n"+note, id).
+		Scan(&t.ID, &t.Title, &t.Description, &t.Status, &t.Severity, &t.OwnerID, &t.CreatedAt)
+
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Broadcast FULL updated ticket
+	broadcast <- Message{Type: "TICKET_UPDATED", Data: t}
+	
+	c.JSON(200, gin.H{"message": "Data fetched and attached", "data": data, "ticket": t})
 }
 
 // WebSocket
