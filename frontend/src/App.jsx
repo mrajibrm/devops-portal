@@ -3,13 +3,14 @@ import { BrowserRouter as Router, Routes, Route, Navigate, NavLink, useLocation 
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { TicketProvider } from './context/TicketContext';
-import { LayoutDashboard, Ticket, LogOut, Terminal, Layers, PlusCircle, Settings, User, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Ticket, LogOut, Terminal, Layers, PlusCircle, Settings as SettingsIcon, User, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Pages
 import Login from './pages/Login';
 import UserPortal from './pages/UserPortal';
 import EngineerCockpit from './pages/EngineerCockpit';
 import AdminUserManagement from './pages/AdminUserManagement';
+import Settings from './pages/Settings';
 
 const Sidebar = ({ collapsed, toggle }) => {
     const { user, logout } = useAuth();
@@ -61,10 +62,10 @@ const Sidebar = ({ collapsed, toggle }) => {
                 <div className="my-2 border-t border-white/5"></div>
 
                 {!collapsed && <div className="px-2 mb-2 text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">System</div>}
-                <a href="#" className={`nav-item cursor-not-allowed opacity-50 ${collapsed ? 'justify-center px-2' : ''}`}>
-                    <Settings size={20} className="flex-shrink-0" />
+                <NavLink to="/settings" className={navLinkClass} title={collapsed ? "Settings" : ""}>
+                    <SettingsIcon size={20} className="flex-shrink-0" />
                     {!collapsed && <span className="text-base whitespace-nowrap">Settings</span>}
-                </a>
+                </NavLink>
             </nav>
 
             {/* Toggle Button */}
@@ -143,6 +144,12 @@ const App = () => {
                                 <Route path="/admin/users" element={
                                     <ProtectedRoute roles={['admin']}>
                                         <AdminUserManagement />
+                                    </ProtectedRoute>
+                                } />
+
+                                <Route path="/settings" element={
+                                    <ProtectedRoute roles={['user', 'admin', 'devops']}>
+                                        <Settings />
                                     </ProtectedRoute>
                                 } />
                             </Routes>

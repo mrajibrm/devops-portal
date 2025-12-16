@@ -119,6 +119,48 @@ app.get('/auth/verify', (req, res) => {
     });
 });
 
+// Change Password
+app.post('/auth/change-password', async (req, res) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (!token) return res.sendStatus(401);
+
+    jwt.verify(token, JWT_SECRET, async (err, user) => {
+        if (err) return res.sendStatus(403);
+
+        const { currentPassword, newPassword } = req.body;
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ error: "Current and new password are required" });
+        }
+
+        try {
+            // Get user's current hash
+            const result = await pool.query('SELECT password_hash FROM users WHERE id = $1', [user.id]);
+            if (result.rows.length === 0) return res.sendStatus(404);
+
+            const userRecord = result.rows[0];
+
+            // Verify current password
+            const valid = await bcrypt.compare(currentPassword, userRecord.password_hash);
+            if (!valid) {
+                return res.status(401).json({ error: "Incorrect current password" });
+            }
+
+            // Hash new password
+            const salt = await bcrypt.genSalt(10);
+            const newHash = await bcrypt.hash(newPassword, salt);
+
+            // Update DB
+            await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [newHash, user.id]);
+
+            res.json({ message: "Password updated successfully" });
+        } catch (dbErr) {
+            console.error("Change Password Error:", dbErr);
+            res.status(500).json({ error: "Internal Server Error" });
+        }
+    });
+});
+
 // --- Admin Routes ---
 
 // Middleware to check for Admin Role
