@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { PlusCircle, Search, RefreshCw, Lock, Shield, Edit2, UserPlus, Check, X } from 'lucide-react';
+import { PlusCircle, Search, RefreshCw, Lock, Shield, Edit2, UserPlus, Check, X, Trash2, Power, AlertTriangle } from 'lucide-react';
 
 const AdminUserManagement = () => {
     const { token } = useAuth();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editingUser, setEditingUser] = useState(null);
     const [error, setError] = useState(null);
 
     // Form State
@@ -89,6 +91,44 @@ const AdminUserManagement = () => {
         }
     };
 
+    const handleEditClick = (user) => {
+        setEditingUser({ ...user }); // Create a copy
+        setShowEditModal(true);
+    };
+
+    const handleUpdateUser = async (e) => {
+        e.preventDefault();
+        setError(null);
+
+        try {
+            const res = await axios.put(`/api/auth/admin/users/${editingUser.id}`, editingUser, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setShowEditModal(false);
+            setEditingUser(null);
+            fetchUsers();
+            alert(`User updated successfully!`);
+        } catch (err) {
+            console.error(err);
+            setError(err.response?.data?.error || "Failed to update user");
+        }
+    };
+
+    const handleDeleteUser = async (userId, username) => {
+        if (!window.confirm(`Are you sure you want to PERMANENTLY DELETE user "${username}"?\n\nThis action cannot be undone.`)) return;
+
+        try {
+            await axios.delete(`/api/auth/admin/users/${userId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            fetchUsers();
+            alert(`User "${username}" deleted.`);
+        } catch (err) {
+            console.error(err);
+            alert(err.response?.data?.error || "Failed to delete user");
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -127,6 +167,7 @@ const AdminUserManagement = () => {
                                 <th className="p-4 font-semibold">User</th>
                                 <th className="p-4 font-semibold">Contact</th>
                                 <th className="p-4 font-semibold">Role</th>
+                                <th className="p-4 font-semibold">Status</th>
                                 <th className="p-4 font-semibold">Department</th>
                                 <th className="p-4 font-semibold text-right">Actions</th>
                             </tr>
@@ -158,6 +199,15 @@ const AdminUserManagement = () => {
                                             {u.role.toUpperCase()}
                                         </span>
                                     </td>
+                                    <td className="p-4">
+                                        <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium border ${u.is_active !== false
+                                                ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                                                : 'bg-red-500/10 text-red-400 border-red-500/20'
+                                            }`}>
+                                            <span className={`w-1.5 h-1.5 rounded-full ${u.is_active !== false ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                                            {u.is_active !== false ? 'Active' : 'Inactive'}
+                                        </span>
+                                    </td>
                                     <td className="p-4 text-sm text-slate-400">
                                         <div className="font-medium text-slate-300">{u.department || '-'}</div>
                                         <div className="text-xs text-slate-600">{u.designation}</div>
@@ -174,9 +224,16 @@ const AdminUserManagement = () => {
                                             <button
                                                 className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors"
                                                 title="Edit User"
-                                                onClick={() => alert("Edit feature coming soon (Backend API ready)")}
+                                                onClick={() => handleEditClick(u)}
                                             >
                                                 <Edit2 size={16} />
+                                            </button>
+                                            <button
+                                                className="p-1.5 text-red-400 hover:text-white hover:bg-red-600 rounded transition-colors"
+                                                title="Delete User"
+                                                onClick={() => handleDeleteUser(u.id, u.username)}
+                                            >
+                                                <Trash2 size={16} />
                                             </button>
                                         </div>
                                     </td>
@@ -242,6 +299,7 @@ const AdminUserManagement = () => {
                                     className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-brand-500 transition-colors"
                                     value={newUser.full_name}
                                     onChange={e => setNewUser({ ...newUser, full_name: e.target.value })}
+                                    placeholder="e.g. John Doe"
                                 />
                             </div>
 
@@ -274,6 +332,7 @@ const AdminUserManagement = () => {
                                         className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-brand-500 transition-colors"
                                         value={newUser.phone}
                                         onChange={e => setNewUser({ ...newUser, phone: e.target.value })}
+                                        placeholder="+1..."
                                     />
                                 </div>
                                 <div className="space-y-1">
@@ -303,6 +362,130 @@ const AdminUserManagement = () => {
                                     className="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg transition-colors font-medium shadow-lg shadow-brand-500/20"
                                 >
                                     Create User
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit User Modal */}
+            {showEditModal && editingUser && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-950/50">
+                            <h3 className="text-xl font-bold text-white">Edit User</h3>
+                            <button onClick={() => setShowEditModal(false)} className="text-slate-400 hover:text-white transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleUpdateUser} className="p-6 space-y-4">
+                            {/* Active/Inactive Toggle */}
+                            <div className="bg-slate-950/50 border border-slate-800 rounded-lg p-3 flex justify-between items-center">
+                                <div>
+                                    <div className="text-sm font-medium text-slate-200">Account Status</div>
+                                    <div className="text-xs text-slate-500">Deactivated users cannot login.</div>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only peer"
+                                        checked={editingUser.is_active !== false}
+                                        onChange={e => setEditingUser({ ...editingUser, is_active: e.target.checked })}
+                                    />
+                                    <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"></div>
+                                </label>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-xs font-medium text-slate-400 uppercase">Username (Read-Only)</label>
+                                    <input
+                                        type="text"
+                                        disabled
+                                        className="w-full bg-slate-950/50 border border-slate-800 rounded-lg p-2 text-slate-500 cursor-not-allowed"
+                                        value={editingUser.username || ''}
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-medium text-slate-400 uppercase">Email (Read-Only)</label>
+                                    <input
+                                        type="email"
+                                        disabled
+                                        className="w-full bg-slate-950/50 border border-slate-800 rounded-lg p-2 text-slate-500 cursor-not-allowed"
+                                        value={editingUser.email || ''}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-xs font-medium text-slate-400 uppercase">Full Name</label>
+                                <input
+                                    type="text"
+                                    className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-brand-500 transition-colors"
+                                    value={editingUser.full_name || ''}
+                                    onChange={e => setEditingUser({ ...editingUser, full_name: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-xs font-medium text-slate-400 uppercase">Designation</label>
+                                    <input
+                                        type="text"
+                                        className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-brand-500 transition-colors"
+                                        value={editingUser.designation || ''}
+                                        onChange={e => setEditingUser({ ...editingUser, designation: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-medium text-slate-400 uppercase">Department</label>
+                                    <input
+                                        type="text"
+                                        className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-brand-500 transition-colors"
+                                        value={editingUser.department || ''}
+                                        onChange={e => setEditingUser({ ...editingUser, department: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-xs font-medium text-slate-400 uppercase">Phone</label>
+                                    <input
+                                        type="text"
+                                        className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-brand-500 transition-colors"
+                                        value={editingUser.phone || ''}
+                                        onChange={e => setEditingUser({ ...editingUser, phone: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-medium text-slate-400 uppercase">Role</label>
+                                    <select
+                                        className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-brand-500 transition-colors"
+                                        value={editingUser.role || 'user'}
+                                        onChange={e => setEditingUser({ ...editingUser, role: e.target.value })}
+                                    >
+                                        <option value="user">User</option>
+                                        <option value="devops">DevOps Engineer</option>
+                                        <option value="admin">Administrator</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="pt-4 flex gap-3 justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowEditModal(false)}
+                                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors font-medium"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg transition-colors font-medium shadow-lg shadow-brand-500/20"
+                                >
+                                    Update User
                                 </button>
                             </div>
                         </form>

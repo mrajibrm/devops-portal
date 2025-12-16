@@ -68,9 +68,6 @@ app.post('/auth/login', loginLimiter, async (req, res) => {
 
     try {
         // Fetch user from DB
-        // NOTE: In production, we'd have a 'users' table in auth_db.
-        // For this Demo, we might need to seed it or use hardcoded logic if DB is empty.
-        // Let's assume the DB has users.
         const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
 
         if (result.rows.length === 0) {
@@ -78,6 +75,12 @@ app.post('/auth/login', loginLimiter, async (req, res) => {
         }
 
         const user = result.rows[0];
+
+        // Check is_active
+        if (user.is_active === false) {
+            return res.status(403).json({ error: "Account is inactive. Please contact administrator." });
+        }
+
         const validPassword = await bcrypt.compare(password, user.password_hash);
 
         if (!validPassword) {
@@ -205,7 +208,7 @@ function authenticateAdmin(req, res, next) {
 // Get All Users
 app.get('/auth/admin/users', authenticateAdmin, async (req, res) => {
     try {
-        const result = await pool.query('SELECT id, username, email, full_name, role, designation, department, phone, created_at FROM users ORDER BY id');
+        const result = await pool.query('SELECT id, username, email, full_name, role, designation, department, phone, is_active, created_at FROM users ORDER BY id');
         res.json(result.rows);
     } catch (err) {
         console.error(err);
@@ -240,9 +243,9 @@ app.post('/auth/admin/users', authenticateAdmin, async (req, res) => {
         const hash = await bcrypt.hash(password, salt);
 
         const result = await pool.query(
-            `INSERT INTO users (username, password_hash, role, email, full_name, phone, designation, department) 
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
-             RETURNING id, username, email, full_name, role`,
+            `INSERT INTO users (username, password_hash, role, email, full_name, phone, designation, department, is_active) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true) 
+             RETURNING id, username, email, full_name, role, is_active`,
             [username, hash, role, email, full_name, phone, designation, department]
         );
 
@@ -262,7 +265,7 @@ app.post('/auth/admin/users', authenticateAdmin, async (req, res) => {
 // Update User
 app.put('/auth/admin/users/:id', authenticateAdmin, async (req, res) => {
     const { id } = req.params;
-    const { role, full_name, phone, designation, department } = req.body;
+    const { role, full_name, phone, designation, department, is_active } = req.body;
 
     try {
         const result = await pool.query(
@@ -271,16 +274,32 @@ app.put('/auth/admin/users/:id', authenticateAdmin, async (req, res) => {
                  full_name = COALESCE($2, full_name), 
                  phone = COALESCE($3, phone), 
                  designation = COALESCE($4, designation), 
-                 department = COALESCE($5, department)
-             WHERE id = $6
-             RETURNING id, username, email, full_name, role, designation, department, phone`,
-            [role, full_name, phone, designation, department, id]
+                 department = COALESCE($5, department),
+                 is_active = COALESCE($6, is_active)
+             WHERE id = $7
+             RETURNING id, username, email, full_name, role, designation, department, phone, is_active`,
+            [role, full_name, phone, designation, department, is_active, id]
         );
 
         if (result.rows.length === 0) {
             return res.status(404).json({ error: "User not found" });
         }
         res.json(result.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+// Delete User
+app.delete('/auth/admin/users/:id', authenticateAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query('DELETE FROM users WHERE id = $1 RETURNING id', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "User not found" });
+        }
+        res.json({ message: "User deleted successfully" });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Internal Server Error" });
@@ -332,6 +351,7 @@ async function ensureSchemaAndSeed() {
                 phone VARCHAR(20),
                 designation VARCHAR(50),
                 department VARCHAR(50),
+                is_active BOOLEAN DEFAULT TRUE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);
@@ -343,6 +363,11 @@ async function ensureSchemaAndSeed() {
                 await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ${col} VARCHAR(100)`);
             } catch (ignore) { /* ignore if exists */ }
         }
+
+        // Add is_active column
+        try {
+            await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE`);
+        } catch (ignore) { }
 
         // 3. Add created_at if missing (TIMESTAMP)
         try {
@@ -358,24 +383,24 @@ async function ensureSchemaAndSeed() {
             // User: alice / user123
             const p1 = await bcrypt.hash('user123', salt);
             await pool.query(
-                `INSERT INTO users (username, password_hash, role, email, full_name, designation, department) 
-                 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                `INSERT INTO users (username, password_hash, role, email, full_name, designation, department, is_active) 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, true)`,
                 ['alice', p1, 'user', 'alice@devops.com', 'Alice Smith', 'Junior Dev', 'Engineering']
             );
 
             // DevOps: bob / devops123
             const p2 = await bcrypt.hash('devops123', salt);
             await pool.query(
-                `INSERT INTO users (username, password_hash, role, email, full_name, designation, department) 
-                 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                `INSERT INTO users (username, password_hash, role, email, full_name, designation, department, is_active) 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, true)`,
                 ['bob', p2, 'devops', 'bob@devops.com', 'Bob Jones', 'DevOps Engineer', 'Operations']
             );
 
             // Admin: admin / admin123
             const p3 = await bcrypt.hash('admin123', salt);
             await pool.query(
-                `INSERT INTO users (username, password_hash, role, email, full_name, designation, department) 
-                 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                `INSERT INTO users (username, password_hash, role, email, full_name, designation, department, is_active) 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, true)`,
                 ['admin', p3, 'admin', 'admin@devops.com', 'Admin User', 'System Administrator', 'IT']
             );
             console.log("Seeding complete.");
