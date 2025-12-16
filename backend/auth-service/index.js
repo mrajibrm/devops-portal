@@ -128,8 +128,15 @@ function authenticateAdmin(req, res, next) {
     if (!token) return res.sendStatus(401);
 
     jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) return res.sendStatus(403);
-        if (user.role !== 'admin') return res.status(403).json({ error: "Admin access required" });
+        if (err) {
+            console.error("JWT Verify Error:", err);
+            return res.sendStatus(403);
+        }
+        console.log("Admin Check:", user.username, user.role);
+        if (user.role !== 'admin') {
+            console.error("Access Denied: Role is", user.role);
+            return res.status(403).json({ error: "Admin access required" });
+        }
         req.user = user;
         next();
     });
