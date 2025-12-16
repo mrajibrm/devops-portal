@@ -100,6 +100,12 @@ func initDB() {
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString := c.GetHeader("Authorization")
+		
+		// If no header, check query param (for WebSockets)
+		if tokenString == "" {
+			tokenString = c.Query("token")
+		}
+
 		if tokenString == "" {
 			c.AbortWithStatus(401)
 			return

@@ -41,7 +41,7 @@ export const TicketProvider = ({ children }) => {
         if (!token) return;
 
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.host}/api/tickets/live`;
+        const wsUrl = `${protocol}//${window.location.host}/api/tickets/live?token=${token}`;
 
         console.log('Connecting to WebSocket:', wsUrl);
         const ws = new WebSocket(wsUrl);
