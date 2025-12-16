@@ -12,7 +12,26 @@ const PORT = process.env.PORT || 3000;
 
 // Security Middleware
 app.use(helmet());
-app.use(cors());
+// CORS Configuration
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://34.171.216.33',
+    'http://34.171.216.33:80'
+];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        // or if it matches our allowed list
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true
+}));
 app.use(express.json());
 
 // Rate Limiting (Brute Force Protection)

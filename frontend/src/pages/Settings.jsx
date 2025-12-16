@@ -36,7 +36,7 @@ const Settings = () => {
 
             const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
 
-            const response = await fetch('http://localhost:3000/auth/change-password', {
+            const response = await fetch('/api/auth/change-password', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
