@@ -1,27 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { useTickets } from '../context/TicketContext';
 import { Plus, Server, Activity, Shield, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 
 const UserPortal = () => {
     const { token } = useAuth();
-    const [tickets, setTickets] = useState([]);
+    const { tickets, createTicket } = useTickets();
     const [templates, setTemplates] = useState([]);
     const [view, setView] = useState('list'); // 'list' | 'create'
     const [selectedTemplate, setSelectedTemplate] = useState(null);
     const [formData, setFormData] = useState({});
 
     useEffect(() => {
-        fetchTickets();
         fetchTemplates();
     }, []);
-
-    const fetchTickets = async () => {
-        try {
-            const res = await axios.get('/api/tickets', { headers: { Authorization: `Bearer ${token}` } });
-            setTickets(res.data || []);
-        } catch (err) { console.error(err); }
-    };
 
     const fetchTemplates = async () => {
         try {
@@ -29,6 +22,8 @@ const UserPortal = () => {
             setTemplates(res.data || []);
         } catch (err) { console.error(err); }
     };
+
+
 
     const handleCreate = async (e) => {
         e.preventDefault();
@@ -41,9 +36,8 @@ const UserPortal = () => {
         };
 
         try {
-            await axios.post('/api/tickets', payload, { headers: { Authorization: `Bearer ${token}` } });
+            await createTicket(payload);
             setView('list');
-            fetchTickets();
             setSelectedTemplate(null);
             setFormData({});
         } catch (err) { alert('Failed to create ticket'); }

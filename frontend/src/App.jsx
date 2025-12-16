@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, NavLink, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { TicketProvider } from './context/TicketContext';
 import { LayoutDashboard, Ticket, LogOut, Terminal, Layers, PlusCircle, Settings, User, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Pages
@@ -113,24 +114,26 @@ const App = () => {
         <Router>
             <ThemeProvider>
                 <AuthProvider>
-                    <Layout>
-                        <Routes>
-                            <Route path="/login" element={<Login />} />
-                            <Route path="/" element={<Navigate to="/login" />} />
+                    <TicketProvider>
+                        <Layout>
+                            <Routes>
+                                <Route path="/login" element={<Login />} />
+                                <Route path="/" element={<Navigate to="/login" />} />
 
-                            <Route path="/portal" element={
-                                <ProtectedRoute roles={['user', 'admin']}>
-                                    <UserPortal />
-                                </ProtectedRoute>
-                            } />
+                                <Route path="/portal" element={
+                                    <ProtectedRoute roles={['user', 'admin']}>
+                                        <UserPortal />
+                                    </ProtectedRoute>
+                                } />
 
-                            <Route path="/cockpit" element={
-                                <ProtectedRoute roles={['devops', 'admin']}>
-                                    <EngineerCockpit />
-                                </ProtectedRoute>
-                            } />
-                        </Routes>
-                    </Layout>
+                                <Route path="/cockpit" element={
+                                    <ProtectedRoute roles={['devops', 'admin']}>
+                                        <EngineerCockpit />
+                                    </ProtectedRoute>
+                                } />
+                            </Routes>
+                        </Layout>
+                    </TicketProvider>
                 </AuthProvider>
             </ThemeProvider>
         </Router>

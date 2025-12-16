@@ -1,80 +1,22 @@
-import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
-import { useAuth } from '../context/AuthContext';
+import React, { useState, useEffect } from 'react';
+import { useTickets } from '../context/TicketContext';
 import { RefreshCw, Clock, Zap, AlertTriangle, CheckCircle, MoreHorizontal } from 'lucide-react';
 
 const EngineerCockpit = () => {
-    const { token } = useAuth();
-    const [tickets, setTickets] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [pulse, setPulse] = useState(false); // Visual indicator for realtime event
-    const wsRef = useRef(null);
+    const { tickets, loading, lastEvent, updateTicketStatus, fetchExternalData } = useTickets();
+    const [pulse, setPulse] = useState(false);
 
     useEffect(() => {
-        fetchTickets();
-        setupWebSocket();
-        return () => {
-            if (wsRef.current) wsRef.current.close();
-        };
-    }, []);
-
-    const fetchTickets = async () => {
-        try {
-            const res = await axios.get('/api/tickets', { headers: { Authorization: `Bearer ${token}` } });
-            setTickets(res.data || []);
-            setLoading(false);
-        } catch (err) { console.error(err); setLoading(false); }
-    };
-
-    const setupWebSocket = () => {
-        // In dev, assuming proxy. In prod, full URL.
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.host}/api/tickets/live`;
-
-        console.log('Connecting to WebSocket:', wsUrl);
-        const ws = new WebSocket(wsUrl);
-        wsRef.current = ws;
-
-        ws.onopen = () => {
-            console.log('WebSocket Connected');
-        };
-
-        ws.onmessage = (event) => {
-            try {
-                const msg = JSON.parse(event.data);
-                if (msg.type === 'NEW_TICKET') {
-                    console.log('New ticket received:', msg.data);
-                    setTickets(prev => [msg.data, ...prev]);
-                    flashPulse();
-                } else if (msg.type === 'TICKET_UPDATED') {
-                    console.log('Ticket updated:', msg.data);
-                    setTickets(prev => prev.map(t => t.id === msg.data.id ? msg.data : t));
-                    flashPulse();
-                }
-            } catch (e) {
-                console.error('Failed to parse WS message', e);
-            }
-        };
-
-        ws.onerror = (error) => {
-            console.error('WebSocket Error:', error);
-        };
-
-        ws.onclose = () => {
-            console.log('WebSocket Disconnected. Reconnecting in 3s...');
-            setTimeout(setupWebSocket, 3000); // Simple reconnect
-        };
-    };
-
-    const flashPulse = () => {
-        setPulse(true);
-        setTimeout(() => setPulse(false), 2000);
-    };
+        if (lastEvent) {
+            setPulse(true);
+            const timer = setTimeout(() => setPulse(false), 2000);
+            return () => clearTimeout(timer);
+        }
+    }, [lastEvent]);
 
     const updateStatus = async (id, newStatus) => {
         try {
-            await axios.patch(`/api/tickets/${id}`, { status: newStatus }, { headers: { Authorization: `Bearer ${token}` } });
-            // WS will trigger re-fetch
+            await updateTicketStatus(id, newStatus);
         } catch (err) { alert('Update failed'); }
     };
 
@@ -82,8 +24,8 @@ const EngineerCockpit = () => {
         const url = prompt("Enter External URL to fetch diagnostic data (e.g., http://safe-internal-metrics):");
         if (!url) return;
         try {
-            const res = await axios.post(`/api/tickets/${id}/fetch`, { url }, { headers: { Authorization: `Bearer ${token}` } });
-            alert(`Success: ${res.data.data}`);
+            const res = await fetchExternalData(id, url);
+            alert(`Success: ${res.data}`);
         } catch (err) { alert('Fetch Blocked (SSRF Protection) or Failed.'); }
     };
 
